@@ -6,4 +6,4 @@ before_install:
 script:
   - make lint
   - ./setup.py install
-  - pypicache --once-only --dump-path dump.json
+  - pypicache --once-only --frontend-url https://travis-ci.org/github/AMDmi3/pypicache --dump-path dump.json
