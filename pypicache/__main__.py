@@ -17,8 +17,8 @@
 
 import argparse
 import logging
-import time
 import sys
+import time
 from typing import Any
 
 import psycopg2
