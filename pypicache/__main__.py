@@ -71,7 +71,9 @@ class Worker:
     def _update_single_project(self, name: str) -> None:
         logging.info(f'updating project {name}')
 
-        content = self._http_client.get(f'{self._args.pypi_url}/pypi/{name}/json').json()
+        content = self._http_client.get(
+            f'{self._args.pypi_url}/pypi/{name}/json'
+        ).json()
 
         info = content['info']
 
@@ -121,7 +123,7 @@ class Worker:
                     'homepage': info['home_page'],
                     'version': version,
                     'downloads': downloads,
-                }
+                },
             )
 
     def _process_seed_file(self) -> None:
@@ -142,7 +144,9 @@ class Worker:
         reliable, projects = self._feed_parser.parse_feed(content)
 
         if not reliable:
-            logging.warning('first update from previous iteration was not encountered, some updates may have been lost')
+            logging.warning(
+                'first update from previous iteration was not encountered, some updates may have been lost'
+            )
 
         for project in projects:
             self._update_single_project(project)
@@ -204,31 +208,67 @@ class Worker:
                 return
 
             wait_time = min(self._args.update_interval, self._args.dump_interval)
-            logging.info(f'sleeping for {wait_time:.1f} second(s) before next iteration')
+            logging.info(
+                f'sleeping for {wait_time:.1f} second(s) before next iteration'
+            )
             time.sleep(wait_time)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-    parser.add_argument('--dsn', default='dbname=pypicache user=pypicache password=pypicache', help='database connection params')
+    parser.add_argument(
+        '--dsn',
+        default='dbname=pypicache user=pypicache password=pypicache',
+        help='database connection params',
+    )
     parser.add_argument('--debug', action='store_true', help='enable debug logging')
-    parser.add_argument('--once-only', action='store_true', help="do just a single update pass, don't loop")
+    parser.add_argument(
+        '--once-only',
+        action='store_true',
+        help="do just a single update pass, don't loop",
+    )
 
-    parser.add_argument('--update-interval', type=float, default=10.0, help='inverval between PyPi feed updates')
-    parser.add_argument('--dump-interval', type=float, default=3600.0, help='interval between dump generation')
+    parser.add_argument(
+        '--update-interval',
+        type=float,
+        default=10.0,
+        help='inverval between PyPi feed updates',
+    )
+    parser.add_argument(
+        '--dump-interval',
+        type=float,
+        default=3600.0,
+        help='interval between dump generation',
+    )
 
-    parser.add_argument('--dump-path', type=str, required=True, help='path to output dump file')
-    parser.add_argument('--seed-file-path', type=str, help='path to file with project names to seed the database')
+    parser.add_argument(
+        '--dump-path', type=str, required=True, help='path to output dump file'
+    )
+    parser.add_argument(
+        '--seed-file-path',
+        type=str,
+        help='path to file with project names to seed the database',
+    )
 
-    parser.add_argument('--pypi-url', type=str, default='https://pypi.org', help='PyPi host to fetch data from')
+    parser.add_argument(
+        '--pypi-url',
+        type=str,
+        default='https://pypi.org',
+        help='PyPi host to fetch data from',
+    )
     parser.add_argument('--frontend-url', type=str, help='frontend URL')
 
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout')
 
     args = parser.parse_args()
 
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG if args.debug else logging.INFO)
+    logging.basicConfig(
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.DEBUG if args.debug else logging.INFO,
+    )
 
     Worker(args).run()
 

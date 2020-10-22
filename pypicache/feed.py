@@ -33,7 +33,7 @@ class FeedParser:
                 raise RuntimeError('Cannot fild <title> item element')
 
             title = elt.text
-            assert(isinstance(title, str))
+            assert isinstance(title, str)
 
             if first_title is None:
                 first_title = title
