@@ -1,0 +1,9 @@
+language: python
+dist: focal
+python: 3.9-dev
+before_install:
+  - pip install -r requirements-dev.txt
+script:
+  - make lint
+  - ./setup.py install
+  - pypicache --once-only --dump-path dump.json
