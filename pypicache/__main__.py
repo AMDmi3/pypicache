@@ -148,6 +148,8 @@ class Worker:
                 'first update from previous iteration was not encountered, some updates may have been lost'
             )
 
+        logging.info(f'{len(projects)} projects(s) to update')
+
         for project in projects:
             self._update_single_project(project)
 
