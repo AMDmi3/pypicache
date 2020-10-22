@@ -17,7 +17,7 @@ setup(
     author_email='amdmi3@amdmi3.ru',
     url='https://github.com/repology/pypicache/',
     license='GNU General Public License v3 or later (GPLv3+)',
-    packages=['pypicache']
+    packages=['pypicache'],
     entry_points={
         "console_scripts": [
             "pypicache = pypicache.__main__:main"
