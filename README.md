@@ -14,15 +14,20 @@ stores it in the database and periodically generates JSON dumps.
 ## Running
 
 Preparing the database:
-```
+```shell
 psql --username postgres -c "CREATE DATABASE pypicache"
 psql --username postgres -c "CREATE USER pypicache WITH PASSWORD 'pypicache'"
 psql --username postgres -c "GRANT ALL ON DATABASE pypicache TO pypicache"
 ```
 
 Running the tool:
+```shell
+env PYTHONPATH=. python -m pypicache --dump-path=dump.json
 ```
-env PYTHONPATH=. python -m pypicache.py --dump-path=dump.json
+or
+```shell
+python setup.py install
+pypicache --dump-path=dump.json
 ```
 
 ## Author
