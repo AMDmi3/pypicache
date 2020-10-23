@@ -68,6 +68,14 @@ class Worker:
                 """
             )
 
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS queue (
+                    name text NOT NULL PRIMARY KEY
+                )
+                """
+            )
+
     def _update_single_project(self, name: str) -> None:
         logging.info(f'updating project {name}')
 
@@ -126,19 +134,21 @@ class Worker:
                 },
             )
 
+    def _try_update_single_project(self, name: str) -> None:
+        try:
+            self._update_single_project(name)
+        except Exception as e:
+            logging.error(f'failed to update {name}: {str(e)}')
+
     def _process_seed_file(self) -> None:
         if not self._args.seed_file_path:
             return
 
-        logging.info('processing seed file')
         with open(self._args.seed_file_path) as fd:
             for line in fd:
-                self._update_single_project(line.strip())
-        logging.info('done processing seed file')
+                self._try_update_single_project(line.strip())
 
     def _process_feed(self) -> None:
-        logging.info('processing feed')
-
         content = self._http_client.get(f'{self._args.pypi_url}/rss/updates.xml').text
 
         reliable, projects = self._feed_parser.parse_feed(content)
@@ -151,9 +161,14 @@ class Worker:
         logging.info(f'{len(projects)} projects(s) to update')
 
         for project in projects:
-            self._update_single_project(project)
+            self._try_update_single_project(project)
 
-        logging.info('done processing feed')
+    def _process_queue(self) -> None:
+        with self._db.cursor() as cursor:
+            cursor.execute('DELETE FROM queue RETURNING name')
+
+            for (name,) in cursor:
+                self._try_update_single_project(name)
 
     def _generate_dump(self) -> None:
         logging.info('generating dump')
@@ -175,8 +190,6 @@ class Worker:
 
             dump_from_cursor(cursor, self._args.dump_path)
 
-        logging.info('done generating dump')
-
     def run(self) -> None:
         self._init_db()
 
@@ -186,18 +199,17 @@ class Worker:
         last_dump = 0.0
 
         while True:
+            logging.info('iteration started')
+
             now = time.time()
 
             since_last_update = now - last_update
             since_last_dump = now - last_dump
 
             if since_last_update >= self._args.update_interval:
-                try:
-                    self._process_feed()
-                    self._db.commit()
-                except:
-                    self._db.rollback()
-                    raise
+                self._process_feed()
+                self._process_queue()
+                self._db.commit()
 
                 last_update = now
 
@@ -207,6 +219,7 @@ class Worker:
                 last_dump = now
 
             if self._args.once_only:
+                logging.info('iteration done')
                 return
 
             wait_time = min(self._args.update_interval, self._args.dump_interval)
