@@ -276,7 +276,7 @@ def main() -> int:
     )
     parser.add_argument('--frontend-url', type=str, help='frontend URL')
 
-    parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout')
+    parser.add_argument('--timeout', type=int, default=10, help='HTTP timeout')
 
     args = parser.parse_args()
 
