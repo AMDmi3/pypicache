@@ -16,11 +16,58 @@
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
+import datetime
 import os
-from typing import Iterable
+import re
+from typing import Any, Dict, Iterable
 
 
-def generate_dump(item_iter: Iterable[str], path: str, compression_level: int = 5) -> int:
+def generate_output(src_path: str, dst_path: str, dump_file_name: str, item_iter: Iterable[str], compression_level: int = 5) -> None:
+    if not os.path.exists(dst_path):
+        os.mkdir(dst_path)
+
+    html_inpath = os.path.join(src_path, 'index.html')
+    css_inpath = os.path.join(src_path, 'style.css')
+
+    dump_outpath = os.path.join(dst_path, dump_file_name)
+    html_outpath = os.path.join(dst_path, 'index.html')
+    css_outpath = os.path.join(dst_path, 'style.css')
+
+    num_packages = _generate_dump(dump_outpath, item_iter, compression_level)
+    dump_size = os.stat(dump_outpath).st_size
+
+    template_vars = {
+        'FILENAME': dump_file_name,
+        'SIZE': f'{dump_size / 1024 / 1024:.2f} MiB',
+        'DATE': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC'),
+        'PACKAGES': num_packages,
+    }
+
+    _copy_template(html_inpath, html_outpath, template_vars)
+    _copy_template(css_inpath, css_outpath)
+
+
+def _copy_template(src_path: str, dst_path: str, template_vars: Dict[str, Any] = {}) -> None:
+    def template_subst(match: re.Match[str]) -> str:
+        key = match.group(0).strip('%')
+        if key in template_vars:
+            return str(template_vars[key])
+        return match.group(0)
+
+    tmppath = dst_path + '.tmp'
+
+    with open(src_path) as infd:
+        with open(tmppath, 'w') as outfd:
+            for line in infd:
+                outfd.write(re.sub('%[A-Z]+%', template_subst, line))
+
+            outfd.flush()
+            os.fsync(outfd.fileno())
+
+    os.replace(tmppath, dst_path)
+
+
+def _generate_dump(path: str, item_iter: Iterable[str], compression_level: int = 5) -> int:
     tmppath = path + '.tmp'
     success = False
 

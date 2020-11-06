@@ -23,7 +23,7 @@ from pypicache import __version__
 from pypicache.api_client import PyPIClient
 from pypicache.cleanup import cleanup_project
 from pypicache.database import Database
-from pypicache.dump import generate_dump
+from pypicache.output import generate_output
 
 
 class Worker:
@@ -79,18 +79,24 @@ class Worker:
 
             self._update_single_project(name)
 
-    def _generate_dump(self) -> None:
-        logging.info('generating dump')
+    def _generate_output(self) -> None:
+        logging.info('generating output')
 
         start = time.time()
-        generate_dump(self._db.iter_projects(), self._args.dump_path)
+        generate_output(
+            self._args.html_path,
+            self._args.output_path,
+            self._args.dump_file_name,
+            self._db.iter_projects(),
+            self._args.dump_compression_level
+        )
         end = time.time()
 
-        logging.info(f'dump generated in {end-start:.2f} seconds')
+        logging.info(f'output generated in {end-start:.2f} seconds')
 
     def run(self) -> None:
         last_update = 0
-        last_dump = 0
+        last_output = 0
 
         while True:
             logging.info('iteration started')
@@ -98,7 +104,7 @@ class Worker:
             now = int(time.time())
 
             since_last_update = now - last_update
-            since_last_dump = now - last_dump
+            since_last_output = now - last_output
 
             if since_last_update >= self._args.update_interval:
                 self._process_changes()
@@ -107,16 +113,16 @@ class Worker:
 
                 last_update = now
 
-            if since_last_dump >= self._args.dump_interval:
-                self._generate_dump()
+            if since_last_output >= self._args.output_interval:
+                self._generate_output()
 
-                last_dump = now
+                last_output = now
 
             if self._args.once_only:
                 logging.info('iteration done')
                 return
 
-            wait_time = min(self._args.update_interval, self._args.dump_interval)
+            wait_time = min(self._args.update_interval, self._args.output_interval)
             logging.info(
                 f'sleeping for {wait_time:.1f} second(s) before next iteration'
             )

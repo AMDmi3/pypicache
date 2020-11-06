@@ -57,7 +57,6 @@ class PyPIClient:
         last_update = 0
 
         for name, version, timestamp, action in cast(Iterable[Tuple[str, str, int, str]], self._xmlrpc.changelog(since)):
-            print(name, action)  # XXX
             changed_projects.add(name)
             last_update = max(last_update, timestamp)
 

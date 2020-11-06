@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>PyPI package metadata cache</title>
+
+		<link rel="stylesheet" href="./style.css">
+	</head>
+	<body>
+		<div class="header-block">
+			<div class="container">
+				<h1>PyPI package metadata cache</h1>
+			</div>
+		</div>
+		<div class="main-block">
+			<div class="container">
+				<p>
+				For package collections, among which is <a href="https://pypi.org">Python Package Index</a> aka PyPI, it's crucial to provide complete metadata on published packages in an easily accessible way and easily processable format. For instance, it's required by <a href="https://repology.org">Repology</a> to be able to report outdated versions of Python modules packaged in distributions native repositories.
+				</p>
+
+				<p>
+				Unfortunately, PyPI does not currently provide such data in an usable way. According to the <a href="https://pypi.org/help/#integrating">FAQ</a> and <a href="https://warehouse.pypa.io/api-reference/index.html#available-apis-datasets">PyPI API Reference</a>, there are
+				</p>
+				<ul>
+					<li><a href="https://warehouse.pypa.io/api-reference/json.html#project">An endpoint</a> to get information on individual project - not suitable as it requires thousands of HTTP requests to fetch data on all packages.</li>
+					<li><a href="https://warehouse.pypa.io/api-reference/xml-rpc.html">XML-RPC API</a> which has the same problem.</li>
+					<li><a href="https://warehouse.pypa.io/api-reference/legacy.html#simple-project-api">Simple Project API</a> which has the same problem and does not provide any information apart from downloads.</li>
+					<li><a href="https://warehouse.pypa.io/api-reference/bigquery-datasets.html">BigQuery Datasets</a> which require Google account for access.</li>
+				</ul>
+				<p>
+				none of which meets basic acessibility requirements. So as far as PyPI developers do not care (related upstream issues <a href="https://github.com/pypa/warehouse/issues/347">pypa/warehouse#347</a>, <a href="https://github.com/pypa/warehouse/issues/7403">pypa/warehouse#7403</a>) to provide such file, this service is set up to generate a single JSON file dump for a subset of recently changed packages.
+				</p>
+				<p>
+				The format of the following file is <a href="https://facebook.github.io/zstd/">zstandard</a>-compressed JSON file containing a concatenation of outputs of <a href="https://warehouse.readthedocs.io/api-reference/json.html#project">Project</a> PyPI JSON API endpoint into a big JSON array. Each package entry is additioanally processed to remove <i>description</i> field and <i>releases</i> which are not the latest release (as specified by the <i>version</i> field) to reduce the size of the file.
+				</p>
+
+				<div class="dump-block">
+					<a class="dump-link" href="%FILENAME%">Download the latest dump</a>
+					<p>
+					Format: JSON compressed with zstd<br>
+					Size: %SIZE%<br>
+					Generated at %DATE%<br>
+					Contains %PACKAGES% packages<br>
+					</p>
+				</div>
+
+				<h2>Details of operation</h2>
+				<p>
+				This service works by polling XML-RPC <a href="https://warehouse.readthedocs.io/api-reference/xml-rpc.html#mirroring-support">changelog</a> method to discover all package changes since the previous iteration, and then issues a request to <a href="https://warehouse.readthedocs.io/api-reference/json.html#project">Project</a> JSON API endpoint for each changed project to fetch up to date project details. This information is then stored in the database and periodically saved into a single JSON file.
+				</p>
+				<p>
+				Source code is located at <a href="https://github.com/amdmi3/pypicache">GitHub</a>.
+				</p>
+
+				<h2>Warranty</h2>
+				<p>
+				Note that <b>this service provides incomplete data by design</b>, <b>no consistency guarantee is ever provided</b> and <b>you're using this service at your own risk</b>. Additionally, note that XML-RPC API of PyPI is also <a href="https://warehouse.readthedocs.io/api-reference/xml-rpc.html">deprecated</a> with a suggested replacement of <a href="https://warehouse.pypa.io/api-reference/feeds.html#latest-updates-feed">Latest Updates</a> RSS feed, which only provides 40 latest changes without a mechanism to request larger history of updates, which <b>cannot</b> be used in a way that no updates are lost.
+				</p>
+			</div>
+		</div>
+	</body>
+</html>
