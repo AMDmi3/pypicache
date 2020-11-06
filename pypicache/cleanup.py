@@ -32,4 +32,4 @@ def cleanup_project(data: str) -> str:
     for version in versions_to_delete:
         del parsed['releases'][version]
 
-    return json.dumps(parsed)
+    return json.dumps(parsed, separators=(',', ':'))
