@@ -15,32 +15,54 @@
 # You should have received a copy of the GNU General Public License
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
+import contextlib
 import os
-from typing import Any
+from typing import Iterable
 
 
-def dump_from_cursor(cursor: Any, path: str) -> None:
+def generate_dump(item_iter: Iterable[str], path: str, compression_level: int = 5) -> int:
     tmppath = path + '.tmp'
+    success = False
 
-    with open(tmppath, 'w') as outfd:
-        outfd.write('[\n')
+    def remove_temp_file() -> None:
+        if not success and os.path.exists(tmppath):
+            os.remove(tmppath)
 
-        field_names = [desc.name for desc in cursor.description]
+    num_records = 0
+
+    with contextlib.ExitStack() as stack:
+        stack.callback(remove_temp_file)
+
+        outfd = stack.enter_context(open(tmppath, 'wb'))
+
+        if path.endswith('.json'):
+            stack.callback(os.fsync, outfd.fileno())
+        elif path.endswith('.zst'):
+            import zstandard
+            cctx = zstandard.ZstdCompressor(level=compression_level)
+            outfd = stack.enter_context(cctx.stream_writer(outfd))
+        else:
+            raise RuntimeError(f'cannot guess dump file format {path} (use .json or .zst extension)')
+
+        outfd.write(b'[\n')
 
         first = True
 
-        for item in cursor:
+        for item in item_iter:
             if first:
                 first = False
             else:
-                outfd.write(',\n')
+                outfd.write(b',\n')
 
-            json.dump(dict(zip(field_names, item)), outfd)
+            outfd.write(item.encode('utf-8'))
+            num_records += 1
 
-        outfd.write(']\n')
+        outfd.write(b']\n')
 
         outfd.flush()
-        os.fsync(outfd.fileno())
+
+        success = True
 
     os.replace(tmppath, path)
+
+    return num_records

@@ -18,227 +18,8 @@
 import argparse
 import logging
 import sys
-import time
-from typing import Any
 
-import psycopg2
-
-from pypicache import __version__
-from pypicache.dump import dump_from_cursor
-from pypicache.feed import FeedParser
-from pypicache.http import HTTPClient
-
-
-class Worker:
-    _args: argparse.Namespace
-
-    _db: Any
-
-    _feed_parser: FeedParser
-    _http_client: HTTPClient
-
-    def __init__(self, args: argparse.Namespace) -> None:
-        self._args = args
-        self._db = psycopg2.connect(args.dsn, application_name='pypicache')
-        self._feed_parser = FeedParser()
-
-        ua = f'pypicache/{__version__}'
-        if args.frontend_url:
-            ua += f' (+{args.frontend_url}'
-
-        self._http_client = HTTPClient(ua, args.timeout)
-
-    def _init_db(self) -> None:
-        with self._db.cursor() as cur:
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS projects (
-                    name text NOT NULL PRIMARY KEY,
-
-                    added timestamptz NOT NULL DEFAULT now(),
-                    updated timestamptz NOT NULL DEFAULT now(),
-
-                    author text,
-                    author_email text,
-                    maintainer text,
-                    maintainer_email text,
-                    summary text,
-                    homepage text,
-                    version text,
-                    downloads text[]
-                )
-                """
-            )
-
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS queue (
-                    name text NOT NULL PRIMARY KEY
-                )
-                """
-            )
-
-    def _update_single_project(self, name: str) -> None:
-        logging.info(f'updating project {name}')
-
-        content = self._http_client.get(
-            f'{self._args.pypi_url}/pypi/{name}/json'
-        ).json()
-
-        info = content['info']
-
-        version = info['version']
-        releases = content['releases'][version]
-        downloads = [release['url'] for release in releases]
-
-        with self._db.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO projects (
-                    name,
-                    updated,
-                    author,
-                    author_email,
-                    maintainer,
-                    maintainer_email,
-                    summary,
-                    homepage,
-                    version,
-                    downloads
-                )
-                VALUES (
-                    %(name)s,
-                    now(),
-                    %(author)s,
-                    %(author_email)s,
-                    %(maintainer)s,
-                    %(maintainer_email)s,
-                    %(summary)s,
-                    %(homepage)s,
-                    %(version)s,
-                    %(downloads)s
-                )
-                ON CONFLICT (name)
-                DO UPDATE SET
-                    updated = now(),
-                    author = EXCLUDED.author,
-                    author_email = EXCLUDED.author_email,
-                    maintainer = EXCLUDED.maintainer,
-                    maintainer_email = EXCLUDED.maintainer_email,
-                    summary = EXCLUDED.summary,
-                    homepage = EXCLUDED.homepage,
-                    version = EXCLUDED.version,
-                    downloads = EXCLUDED.downloads
-                ;
-                """,
-                {
-                    'name': name,
-                    'author': info['author'] or None,
-                    'author_email': info['author_email'] or None,
-                    'maintainer': info['maintainer'] or None,
-                    'maintainer_email': info['maintainer_email'] or None,
-                    'summary': info['summary'] or None,
-                    'homepage': info['home_page'] or None,
-                    'version': version,
-                    'downloads': downloads,
-                },
-            )
-
-    def _try_update_single_project(self, name: str) -> None:
-        try:
-            self._update_single_project(name)
-        except Exception as e:
-            logging.error(f'failed to update {name}: {str(e)}')
-
-    def _process_seed_file(self) -> None:
-        if not self._args.seed_file_path:
-            return
-
-        with open(self._args.seed_file_path) as fd:
-            for line in fd:
-                self._try_update_single_project(line.strip())
-
-    def _process_feed(self) -> None:
-        content = self._http_client.get(f'{self._args.pypi_url}/rss/updates.xml').text
-
-        reliable, projects = self._feed_parser.parse_feed(content)
-
-        if not reliable:
-            logging.warning(
-                'first update from previous iteration was not encountered, some updates may have been lost'
-            )
-
-        logging.info(f'{len(projects)} projects(s) to update')
-
-        for project in projects:
-            self._try_update_single_project(project)
-
-    def _process_queue(self) -> None:
-        with self._db.cursor() as cursor:
-            cursor.execute('DELETE FROM queue RETURNING name')
-
-            for (name,) in cursor:
-                self._try_update_single_project(name)
-
-    def _generate_dump(self) -> None:
-        logging.info('generating dump')
-
-        with self._db.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT
-                    name,
-                    author,
-                    author_email,
-                    maintainer,
-                    maintainer_email,
-                    summary,
-                    homepage,
-                    version,
-                    downloads
-                FROM projects
-                """
-            )
-
-            dump_from_cursor(cursor, self._args.dump_path)
-
-    def run(self) -> None:
-        self._init_db()
-
-        self._process_seed_file()
-
-        last_update = 0.0
-        last_dump = 0.0
-
-        while True:
-            logging.info('iteration started')
-
-            now = time.time()
-
-            since_last_update = now - last_update
-            since_last_dump = now - last_dump
-
-            if since_last_update >= self._args.update_interval:
-                self._process_feed()
-                self._process_queue()
-                self._db.commit()
-
-                last_update = now
-
-            if since_last_dump >= self._args.dump_interval:
-                self._generate_dump()
-
-                last_dump = now
-
-            if self._args.once_only:
-                logging.info('iteration done')
-                return
-
-            wait_time = min(self._args.update_interval, self._args.dump_interval)
-            logging.info(
-                f'sleeping for {wait_time:.1f} second(s) before next iteration'
-            )
-            time.sleep(wait_time)
+from pypicache.worker import Worker
 
 
 def main() -> int:
@@ -246,49 +27,19 @@ def main() -> int:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument(
-        '--dsn',
-        default='dbname=pypicache user=pypicache password=pypicache',
-        help='database connection params',
-    )
+    parser.add_argument('--dsn', default='dbname=pypicache user=pypicache password=pypicache', help='database connection params')
     parser.add_argument('--debug', action='store_true', help='enable debug logging')
-    parser.add_argument(
-        '--once-only',
-        action='store_true',
-        help="do just a single update pass, don't loop",
-    )
+    parser.add_argument('--once-only', action='store_true', help="do just a single update pass, don't loop")
 
-    parser.add_argument(
-        '--update-interval',
-        type=float,
-        default=10.0,
-        help='inverval between PyPi feed updates',
-    )
-    parser.add_argument(
-        '--dump-interval',
-        type=float,
-        default=3600.0,
-        help='interval between dump generation',
-    )
+    grp = parser.add_argument_group('Update settings')
+    grp.add_argument('--update-interval', type=int, default=60, help='interval between PyPi feed updates')
+    grp.add_argument('--timeout', type=int, default=10, help='HTTP timeout')
+    grp.add_argument('--pypi-url', type=str, default='https://pypi.org/pypi', help='PyPi host to fetch data from')
+    grp.add_argument('--frontend-url', type=str, help='frontend URL to use in user-agent header')
 
-    parser.add_argument(
-        '--dump-path', type=str, required=True, help='path to output dump file'
-    )
-    parser.add_argument(
-        '--seed-file-path',
-        type=str,
-        help='path to file with project names to seed the database',
-    )
-
-    parser.add_argument(
-        '--pypi-url',
-        type=str,
-        default='https://pypi.org',
-        help='PyPi host to fetch data from',
-    )
-    parser.add_argument('--frontend-url', type=str, help='frontend URL')
-
-    parser.add_argument('--timeout', type=int, default=10, help='HTTP timeout')
+    grp = parser.add_argument_group('Dump settings')
+    grp.add_argument('--dump-interval', type=float, default=600.0, help='interval between dump generation')
+    grp.add_argument('--dump-path', type=str, required=True, help='path to output dump file')
 
     args = parser.parse_args()
 

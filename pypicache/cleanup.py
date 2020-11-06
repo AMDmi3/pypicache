@@ -15,21 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
-import requests
+import json
 
 
-class HTTPClient:
-    _user_agent: str
-    _timeout: int
+def cleanup_project(data: str) -> str:
+    parsed = json.loads(data)
 
-    def __init__(self, user_agent: str, timeout: int) -> None:
-        self._user_agent = user_agent
-        self._timeout = timeout
+    del parsed['info']['description']
 
-    def get(self, url: str) -> requests.Response:
-        headers = {'user-agent': self._user_agent}
+    versions_to_delete = [
+        version
+        for version in parsed['releases'].keys()
+        if version != parsed['info']['version']
+    ]
 
-        response = requests.get(url, headers=headers, timeout=self._timeout)
-        response.raise_for_status()
+    for version in versions_to_delete:
+        del parsed['releases'][version]
 
-        return response
+    return json.dumps(parsed)
