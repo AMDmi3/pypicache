@@ -104,7 +104,7 @@ def _generate_dump(path: str, item_iter: Iterable[str], compression_level: int =
             outfd.write(item.encode('utf-8'))
             num_records += 1
 
-        outfd.write(b']\n')
+        outfd.write(b'\n]\n')
 
         outfd.flush()
 
