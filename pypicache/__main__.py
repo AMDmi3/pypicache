@@ -38,7 +38,7 @@ def main() -> int:
     grp.add_argument('--frontend-url', type=str, help='frontend URL to use in user-agent header')
 
     grp = parser.add_argument_group('Output settings')
-    grp.add_argument('--output-interval', type=float, default=600.0, help='interval between dump generation')
+    grp.add_argument('--output-interval', type=int, default=600, help='interval between dump generation')
     grp.add_argument('--output-path', type=str, required=True, help='path to output directory')
     grp.add_argument('--html-path', type=str, default='./html', help='path to directory with html template')
     grp.add_argument('--dump-file-name', type=str, default='pypicache.json.zst', help='dump file name (extensions controls used compression)')
