@@ -101,7 +101,7 @@ class Database():
             return row[0] if row else None
 
     def iter_projects(self) -> Iterable[str]:
-        with self._db.cursor("iter_projects") as cur:
+        with self._db.cursor('iter_projects') as cur:
             cur.execute('SELECT data FROM projects')
 
             yield from (row[0] for row in cur)
@@ -117,7 +117,7 @@ class Database():
             cur.execute('UPDATE last_update SET last_update = %(last_update)s', {'last_update': last_update})
 
     def iter_queue(self) -> Iterable[str]:
-        with self._db.cursor("iter_queue") as cur:
+        with self._db.cursor('iter_queue') as cur:
             cur.execute('DELETE FROM queue RETURNING name')
 
             yield from (row[0] for row in cur)
