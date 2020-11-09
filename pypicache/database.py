@@ -117,7 +117,7 @@ class Database():
             cur.execute('UPDATE last_update SET last_update = %(last_update)s', {'last_update': last_update})
 
     def iter_queue(self) -> Iterable[str]:
-        with self._db.cursor('iter_queue') as cur:
+        with self._db.cursor() as cur:
             cur.execute('DELETE FROM queue RETURNING name')
 
             yield from (row[0] for row in cur)
