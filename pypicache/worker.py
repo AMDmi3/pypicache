@@ -127,29 +127,34 @@ class Worker:
         while True:
             logging.info('iteration started')
 
-            now = int(time.time())
+            now = time.time()
 
-            since_last_update = now - last_update
-            since_last_output = now - last_output
-
-            if since_last_update >= self._args.update_interval:
+            if now - last_update >= self._args.update_interval:
                 self._process_changes()
                 self._process_queue()
                 self._db.commit()
-
                 last_update = now
 
-            if since_last_output >= self._args.output_interval:
-                self._generate_output()
+            now = time.time()
 
+            if now - last_output >= self._args.output_interval:
+                self._generate_output()
+                self._db.commit()
                 last_output = now
 
             if self._args.once_only:
                 logging.info('iteration done')
                 return
 
-            wait_time = min(self._args.update_interval, self._args.output_interval)
-            logging.info(
-                f'sleeping for {wait_time:.1f} second(s) before next iteration'
+            now = time.time()
+
+            wait_time = min(
+                last_update + self._args.update_interval - now,
+                last_output + self._args.output_interval - now
             )
-            time.sleep(wait_time)
+
+            if wait_time > 0:
+                logging.info(
+                    f'sleeping for {wait_time:.1f} second(s) before next iteration'
+                )
+                time.sleep(wait_time)
