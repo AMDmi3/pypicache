@@ -126,7 +126,20 @@ class Database():
 
     def iter_queue(self) -> Iterable[str]:
         with self._db.cursor() as cur:
-            cur.execute('DELETE FROM queue RETURNING name')
+            cur.execute(
+                """
+                DELETE FROM queue
+                WHERE name IN (
+                    SELECT name
+                    FROM queue
+                    LIMIT %(batch_size)s
+                )
+                RETURNING name
+                """,
+                {
+                    'batch_size': 1000
+                }
+            )
 
             yield from (row[0] for row in cur)
 
