@@ -16,12 +16,13 @@
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import json
 import logging
 import time
 
 from pypicache import __version__
 from pypicache.api_client import PyPIClient
-from pypicache.cleanup import cleanup_project
+from pypicache.cleanup import prepare_project_data
 from pypicache.database import Database
 from pypicache.output import generate_output
 
@@ -47,17 +48,41 @@ class Worker:
         try:
             etag = self._db.get_etag(name)
 
-            if (res := self._pypi.get_project(name, etag)):
-                data, etag = res
-            else:
-                logging.info(f'project {name} not modified')
-                return
+            res = self._pypi.get_project(name, etag)
 
-            self._db.update_project(name, cleanup_project(data), etag)
-            logging.info(f'project {name} updated')
+            if res.status_code == 304 and res.history:
+                # redirect means that the name is different, and we need complete response
+                # (instead of just 'not modified' status) in order to correct this
+                res = self._pypi.get_project(name)
+
+            if res.status_code == 404:
+                if self._db.remove_project(name):
+                    logging.info(f'  {name}: not found, removed')
+                else:
+                    logging.info(f'  {name}: not found')
+            elif res.status_code == 304:
+                logging.info(f'  {name}: not modified')
+            elif res.status_code == 200:
+                data = json.loads(res.text)
+
+                real_name = data['info']['name']
+
+                # assume that there's redirect if and only if the name is spelled differently
+                assert (real_name != name) == bool(res.history)
+
+                if real_name != name:
+                    if self._db.remove_project(name):
+                        logging.info(f'  {name}: actual name is {real_name}, project under old name removed')
+                    else:
+                        logging.info(f'  {name}: actual name is {real_name}')
+
+                self._db.update_project(real_name, prepare_project_data(data), etag)
+                logging.info(f'  {real_name}: updated')
+            else:
+                logging.info(f'  {name} failed: bad HTTP code {res.status_code}')
 
         except Exception as e:
-            logging.info(f'project {name} update failed: {str(e)}')
+            logging.info(f'  {name}: failed: {str(e)}')
 
     def _process_changes(self) -> None:
         names, last_update = self._pypi.get_changes(self._db.get_last_update())

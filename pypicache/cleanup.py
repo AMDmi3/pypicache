@@ -16,20 +16,19 @@
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+from typing import Any
 
 
-def cleanup_project(data: str) -> str:
-    parsed = json.loads(data)
-
-    del parsed['info']['description']
+def prepare_project_data(data: Any) -> str:
+    del data['info']['description']
 
     versions_to_delete = [
         version
-        for version in parsed['releases'].keys()
-        if version != parsed['info']['version']
+        for version in data['releases'].keys()
+        if version != data['info']['version']
     ]
 
     for version in versions_to_delete:
-        del parsed['releases'][version]
+        del data['releases'][version]
 
-    return json.dumps(parsed, separators=(',', ':'))
+    return json.dumps(data, separators=(',', ':'))

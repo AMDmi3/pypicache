@@ -92,6 +92,14 @@ class Database():
                 }
             )
 
+    def remove_project(self, name: str) -> None:
+        with self._db.cursor() as cur:
+            cur.execute('DELETE FROM projects WHERE name = %(name)s RETURNING 1', {'name': name})
+
+            row = cur.fetchone()
+
+            return bool(row and row[0])
+
     def get_etag(self, name: str) -> Optional[str]:
         with self._db.cursor() as cur:
             cur.execute('SELECT etag FROM projects WHERE name = %(name)s', {'name': name})

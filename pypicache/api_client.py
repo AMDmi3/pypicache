@@ -33,7 +33,7 @@ class PyPIClient:
         self._timeout = timeout
         self._xmlrpc = xmlrpc.client.ServerProxy(api_url)  # XXX: user-agent
 
-    def get_project(self, name: str, etag: Optional[str]) -> Optional[Tuple[str, str]]:
+    def get_project(self, name: str, etag: Optional[str] = None) -> requests.Response:
         headers = {}
 
         if self._user_agent:
@@ -44,13 +44,7 @@ class PyPIClient:
 
         url = f'{self._api_url}/{name}/json'
 
-        response = requests.get(url, headers=headers, timeout=self._timeout)
-        response.raise_for_status()
-
-        if response.status_code == 304:
-            return None
-
-        return response.text, response.headers['etag']
+        return requests.get(url, headers=headers, timeout=self._timeout)
 
     def get_changes(self, since: int) -> Tuple[Set[str], int]:
         changed_projects = set()
