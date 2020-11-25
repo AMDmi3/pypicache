@@ -82,7 +82,7 @@ class Worker:
             else:
                 logging.info(f'  {name} failed: bad HTTP code {res.status_code}')
 
-        except Exception as e:
+        except RuntimeError as e:
             logging.info(f'  {name}: failed: {str(e)}')
 
     def _process_changes(self) -> None:
