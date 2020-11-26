@@ -92,7 +92,7 @@ class Database():
                 }
             )
 
-    def remove_project(self, name: str) -> None:
+    def remove_project(self, name: str) -> bool:
         with self._db.cursor() as cur:
             cur.execute('DELETE FROM projects WHERE name = %(name)s RETURNING 1', {'name': name})
 
