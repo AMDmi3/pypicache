@@ -41,7 +41,7 @@ class Database():
                 );
 
                 CREATE TABLE IF NOT EXISTS projects_data (
-                    name text NOT NULL PRIMARY KEY,
+                    name text NOT NULL PRIMARY KEY REFERENCES projects ON DELETE CASCADE,
                     data text NOT NULL
                 );
 
@@ -116,12 +116,7 @@ class Database():
         with self._db.cursor() as cur:
             cur.execute(
                 """
-                WITH metadata_delete AS (
-                    DELETE FROM projects WHERE name = %(name)s RETURNING 1
-                ), data_delete AS (
-                    DELETE FROM projects_data WHERE name = %(name)s
-                )
-                SELECT * FROM metadata_delete
+                DELETE FROM projects WHERE name = %(name)s RETURNING 1
                 """,
                 {
                     'name': name
