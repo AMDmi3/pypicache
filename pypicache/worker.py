@@ -63,6 +63,10 @@ class Worker:
             elif res.status_code == 304:
                 logging.info(f'  {name}: not modified')
             elif res.status_code == 200:
+                if len(res.text) > 1024 * 1024:
+                    logging.info(f'  {name}: response too big ({len(res.text)} bytes), refusing to process')
+                    return
+
                 data = json.loads(res.text)
 
                 real_name = data['info']['name']
