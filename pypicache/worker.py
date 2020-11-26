@@ -125,8 +125,8 @@ class Worker:
         logging.info(f'output generated in {end-start:.2f} seconds')
 
     def run(self) -> None:
-        last_update = 0
-        last_output = 0
+        last_update = 0.0
+        last_output = 0.0
 
         while True:
             logging.info('iteration started')

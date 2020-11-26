@@ -60,7 +60,7 @@ class Database():
             cur.execute('DELETE FROM last_update')
             cur.execute('INSERT INTO last_update VALUES(%(last_update)s)', {'last_update': last_update})
 
-    def update_project(self, name: str, data: str, etag: str) -> None:
+    def update_project(self, name: str, data: str, etag: Optional[str]) -> None:
         with self._db.cursor() as cur:
             cur.execute(
                 """
