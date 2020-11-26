@@ -114,7 +114,19 @@ class Database():
 
     def remove_project(self, name: str) -> bool:
         with self._db.cursor() as cur:
-            cur.execute('DELETE FROM projects WHERE name = %(name)s RETURNING 1', {'name': name})
+            cur.execute(
+                """
+                WITH metadata_delete AS (
+                    DELETE FROM projects WHERE name = %(name)s RETURNING 1
+                ), data_delete AS (
+                    DELETE FROM projects_data WHERE name = %(name)s
+                )
+                SELECT * FROM metadata_delete
+                """,
+                {
+                    'name': name
+                }
+            )
 
             row = cur.fetchone()
 
