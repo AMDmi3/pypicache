@@ -37,8 +37,12 @@ class Database():
                     added timestamptz NOT NULL DEFAULT now(),
                     updated timestamptz NOT NULL DEFAULT now(),
 
-                    data text not null,
                     etag text
+                );
+
+                CREATE TABLE IF NOT EXISTS projects_data (
+                    name text NOT NULL PRIMARY KEY,
+                    data text NOT NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS queue (
@@ -60,30 +64,42 @@ class Database():
             cur.execute('DELETE FROM last_update')
             cur.execute('INSERT INTO last_update VALUES(%(last_update)s)', {'last_update': last_update})
 
-    def update_project(self, name: str, data: str, etag: Optional[str]) -> None:
+    def update_project(self, name: str, data: str, etag: Optional[str]) -> bool:
         with self._db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO projects (
-                    name,
-                    updated,
-                    data,
-                    etag
+                WITH metadata_update AS (
+                    INSERT INTO projects (
+                        name,
+                        updated,
+                        etag
+                    )
+                    VALUES (
+                        %(name)s,
+                        now(),
+                        %(etag)s
+                    )
+                    ON CONFLICT (name)
+                    DO UPDATE SET
+                        updated = now(),
+                        etag = EXCLUDED.etag
+                    WHERE
+                        projects.etag IS DISTINCT FROM EXCLUDED.etag
+                    RETURNING name
+                ), data_update AS (
+                    INSERT INTO projects_data (
+                        name,
+                        data
+                    )
+                    SELECT
+                        name,
+                        %(data)s
+                    FROM metadata_update
+                    ON CONFLICT (name)
+                    DO UPDATE SET
+                        data = EXCLUDED.data
                 )
-                VALUES (
-                    %(name)s,
-                    now(),
-                    %(data)s,
-                    %(etag)s
-                )
-                ON CONFLICT (name)
-                DO UPDATE SET
-                    updated = now(),
-                    data = EXCLUDED.data,
-                    etag = EXCLUDED.etag
-                WHERE
-                    projects.etag IS DISTINCT FROM EXCLUDED.etag
-                ;
+                SELECT 1 FROM metadata_update
                 """,
                 {
                     'name': name,
@@ -91,6 +107,10 @@ class Database():
                     'etag': etag
                 }
             )
+
+            row = cur.fetchone()
+
+            return bool(row and row[0])
 
     def remove_project(self, name: str) -> bool:
         with self._db.cursor() as cur:
@@ -110,7 +130,7 @@ class Database():
 
     def iter_projects(self) -> Iterable[str]:
         with self._db.cursor('iter_projects') as cur:
-            cur.execute('SELECT data FROM projects')
+            cur.execute('SELECT data FROM projects_data')
 
             yield from (row[0] for row in cur)
 

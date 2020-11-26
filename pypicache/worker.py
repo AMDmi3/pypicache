@@ -74,7 +74,7 @@ class Worker:
                 # assume that there's redirect if and only if the name is spelled differently
                 assert (real_name != name) == bool(res.history)
 
-                self._db.update_project(real_name, prepare_project_data(data), res.headers.get('etag'))
+                updated = self._db.update_project(real_name, prepare_project_data(data), res.headers.get('etag'))
 
                 if real_name != name:
                     if self._db.remove_project(name):
@@ -82,7 +82,10 @@ class Worker:
                     else:
                         logging.info(f'  {name}: actual name is {real_name}')
 
-                logging.info(f'  {real_name}: updated')
+                if updated:
+                    logging.info(f'  {real_name}: updated')
+                else:
+                    logging.info(f'  {real_name}: not updated')
             else:
                 logging.info(f'  {name} failed: bad HTTP code {res.status_code}')
 
