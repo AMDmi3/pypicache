@@ -98,7 +98,7 @@ class Worker:
             self._db.add_queue(name, timedelta(hours=1))
 
     def _process_changes(self) -> None:
-        names, last_update = self._pypi.get_changes(self._db.get_last_update())
+        names, last_update = self._pypi.get_changes(self._db.get_last_update() - self._args.feed_overlap)
 
         if names:
             logging.info(f'updating {len(names)} project(s) from feed')
