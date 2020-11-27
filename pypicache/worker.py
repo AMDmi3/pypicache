@@ -155,7 +155,7 @@ class Worker:
 
             now = time.time()
 
-            if now - last_output >= self._args.output_interval:
+            if self._args.output_path and now - last_output >= self._args.output_interval:
                 self._generate_output()
                 self._db.commit()
                 last_output = now
@@ -166,10 +166,12 @@ class Worker:
 
             now = time.time()
 
-            wait_time = min(
-                last_update + self._args.update_interval - now,
-                last_output + self._args.output_interval - now
-            )
+            wait_times = [last_update + self._args.update_interval - now]
+
+            if self._args.output_path:
+                wait_times.append(last_output + self._args.output_interval - now)
+
+            wait_time = min(wait_times)
 
             if wait_time > 0:
                 logging.info(

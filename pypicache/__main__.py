@@ -40,7 +40,7 @@ def main() -> int:
 
     grp = parser.add_argument_group('Output settings')
     grp.add_argument('--output-interval', type=int, default=3600, help='interval between dump generation')
-    grp.add_argument('--output-path', type=str, required=True, help='path to output directory')
+    grp.add_argument('--output-path', type=str, help='path to output directory')
     grp.add_argument('--html-path', type=str, default='./html', help='path to directory with html template')
     grp.add_argument('--dump-file-name', type=str, default='pypicache.json.zst', help='dump file name (extensions controls used compression)')
     grp.add_argument('--dump-compression-level', type=int, default=5, help='dump compression level, if compression is used')
