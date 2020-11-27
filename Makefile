@@ -4,7 +4,7 @@ MYPY?=		mypy
 lint:: flake8 mypy
 
 flake8:
-	${FLAKE8} pypicache
+	${FLAKE8} --application-import-names=pypicache pypicache
 
 mypy:
 	${MYPY} pypicache
