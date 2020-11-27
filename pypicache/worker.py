@@ -19,6 +19,9 @@ import argparse
 import json
 import logging
 import time
+from datetime import timedelta
+
+import requests
 
 from pypicache import __version__
 from pypicache.api_client import PyPIClient
@@ -87,30 +90,38 @@ class Worker:
                 else:
                     logging.info(f'  {real_name}: not updated')
             else:
-                logging.info(f'  {name} failed: bad HTTP code {res.status_code}')
+                logging.info(f'  {name} failed: bad HTTP code {res.status_code}, readding to queue')
+                self._db.add_queue(name, timedelta(hours=1))
 
-        except RuntimeError as e:
-            logging.info(f'  {name}: failed: {str(e)}')
+        except requests.Timeout:
+            logging.info(f'  {name}: failed: timeout, readdint to queue')
+            self._db.add_queue(name, timedelta(hours=1))
 
     def _process_changes(self) -> None:
         names, last_update = self._pypi.get_changes(self._db.get_last_update())
 
         if names:
-            logging.info(f'{len(names)} project(s) to update')
+            logging.info(f'updating {len(names)} project(s) from feed')
 
             for name in names:
                 self._update_single_project(name)
+                self._db.add_queue(name, timedelta(minutes=10))
 
             self._db.set_last_update(last_update)
 
     def _process_queue(self) -> None:
-        first = True
-        for name in self._db.iter_queue():
-            if first:
-                logging.info('updating projects from queue')
-                first = False
+        if queue := self._db.get_queue(1000):
+            count = len(set(name for _, name in queue))
 
-            self._update_single_project(name)
+            logging.info(f'updating {count} project(s) from queue')
+
+            processed = set()
+
+            for id_, name in queue:
+                if name not in processed:
+                    self._update_single_project(name)
+                    processed.add(name)
+                self._db.remove_queue(id_)
 
     def _generate_output(self) -> None:
         logging.info('generating output')
