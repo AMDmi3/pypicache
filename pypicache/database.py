@@ -52,20 +52,20 @@ class Database():
                     ready_time timestamptz
                 );
 
-                CREATE TABLE IF NOT EXISTS last_update (
-                    last_update integer NOT NULL
+                CREATE TABLE IF NOT EXISTS statistics (
+                    key integer NOT NULL DEFAULT 0 PRIMARY KEY,
+                    last_update integer NOT NULL DEFAULT EXTRACT(EPOCH FROM now()),
+                    num_added integer NOT NULL DEFAULT 0,
+                    num_changed integer NOT NULL DEFAULT 0,
+                    num_removed integer NOT NULL DEFAULT 0,
+                    num_too_big integer NOT NULL DEFAULT 0,
+                    num_requests integer NOT NULL DEFAULT 0
                 );
+
+                INSERT INTO statistics DEFAULT VALUES
+                ON CONFLICT (key) DO NOTHING;
                 """
             )
-
-        with self._db.cursor() as cur:
-            cur.execute('SELECT max(last_update) FROM last_update')
-
-            if not (last_update := next(cur)[0]):
-                last_update = int(time.time())
-
-            cur.execute('DELETE FROM last_update')
-            cur.execute('INSERT INTO last_update VALUES(%(last_update)s)', {'last_update': last_update})
 
     def update_project(self, name: str, data: str, etag: Optional[str]) -> bool:
         with self._db.cursor() as cur:
@@ -146,13 +146,13 @@ class Database():
 
     def get_last_update(self) -> int:
         with self._db.cursor() as cur:
-            cur.execute('SELECT last_update FROM last_update')
+            cur.execute('SELECT last_update FROM statistics')
 
             return cast(int, next(cur)[0])
 
     def set_last_update(self, last_update: int) -> None:
         with self._db.cursor() as cur:
-            cur.execute('UPDATE last_update SET last_update = %(last_update)s', {'last_update': last_update})
+            cur.execute('UPDATE statistics SET last_update = %(last_update)s', {'last_update': last_update})
 
     def add_queue(self, name: str, postpone: Optional[timedelta]) -> None:
         with self._db.cursor() as cur:
@@ -192,6 +192,27 @@ class Database():
             )
 
             return list(cur)
+
+    def update_statistics(self, num_added: int = 0, num_changed: int = 0, num_removed: int = 0, num_too_big: int = 0, num_requests: int = 0):
+        with self._db.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE statistics
+                SET
+                    num_added = num_added + %(num_added)s,
+                    num_changed = num_changed + %(num_changed)s,
+                    num_removed = num_removed + %(num_removed)s,
+                    num_too_big = num_too_big + %(num_too_big)s,
+                    num_requests = num_requests + %(num_requests)s
+                """,
+                {
+                    'num_added': num_added,
+                    'num_changed': num_changed,
+                    'num_removed': num_removed,
+                    'num_too_big': num_too_big,
+                    'num_requests': num_requests,
+                }
+            )
 
     def commit(self) -> None:
         self._db.commit()
