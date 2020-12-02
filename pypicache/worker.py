@@ -100,11 +100,13 @@ class Worker:
                     logging.info(f'  {real_name}: not updated')
             else:
                 logging.info(f'  {name} failed: bad HTTP code {res.status_code}, readding to queue')
-                self._db.add_queue(name, timedelta(hours=1))
+                if self._args.retry:
+                    self._db.add_queue(name, timedelta(seconds=self._args.retry))
 
         except requests.Timeout:
             logging.info(f'  {name}: failed: timeout, readdint to queue')
-            self._db.add_queue(name, timedelta(hours=1))
+            if self._args.retry:
+                self._db.add_queue(name, timedelta(seconds=self._args.retry))
 
     def _process_changes(self) -> None:
         names, last_update = self._pypi.get_changes(self._db.get_last_update() - self._args.feed_overlap)
@@ -114,7 +116,8 @@ class Worker:
 
             for name in names:
                 self._update_single_project(name)
-                self._db.add_queue(name, timedelta(minutes=10))
+                if self._args.recheck:
+                    self._db.add_queue(name, timedelta(seconds=self._args.recheck))
 
             self._db.set_last_update(last_update)
 

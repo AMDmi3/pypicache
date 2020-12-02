@@ -32,14 +32,16 @@ def main() -> int:
     parser.add_argument('--once-only', action='store_true', help="do just a single update pass, don't loop")
 
     grp = parser.add_argument_group('Update settings')
-    grp.add_argument('--update-interval', type=int, default=600, help='interval between PyPi feed updates')
+    grp.add_argument('--update-interval', type=int, default=60, help='interval between PyPi feed updates')
     grp.add_argument('--feed-overlap', type=int, default=0, help='overlap of feed update timestan')
+    grp.add_argument('--recheck', type=int, default=0, help='interval in seconds to issue additional request in')
+    grp.add_argument('--retry', type=int, default=0, help='interval in seconds to retry failed requests')
     grp.add_argument('--timeout', type=int, default=10, help='HTTP timeout')
     grp.add_argument('--pypi-url', type=str, default='https://pypi.org/pypi', help='PyPi host to fetch data from')
     grp.add_argument('--frontend-url', type=str, help='frontend URL to use in user-agent header')
 
     grp = parser.add_argument_group('Output settings')
-    grp.add_argument('--output-interval', type=int, default=3600, help='interval between dump generation')
+    grp.add_argument('--output-interval', type=int, default=600, help='interval between dump generation')
     grp.add_argument('--output-path', type=str, help='path to output directory')
     grp.add_argument('--html-path', type=str, default='./html', help='path to directory with html template')
     grp.add_argument('--dump-file-name', type=str, default='pypicache.json.zst', help='dump file name (extensions controls used compression)')
