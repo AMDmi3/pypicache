@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
 from datetime import timedelta
 from typing import Any, Iterable, List, Optional, Tuple, cast
 

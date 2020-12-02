@@ -52,17 +52,17 @@ class Worker:
             etag = self._db.get_etag(name)
 
             res = self._pypi.get_project(name, etag)
-            self._db.update_statistics(num_requests=1);
+            self._db.update_statistics(num_requests=1)
 
             if res.status_code == 304 and res.history:
                 # redirect means that the name is different, and we need complete response
                 # (instead of just 'not modified' status) in order to correct this
                 res = self._pypi.get_project(name)
-                self._db.update_statistics(num_requests=1);
+                self._db.update_statistics(num_requests=1)
 
             if res.status_code == 404:
                 if self._db.remove_project(name):
-                    self._db.update_statistics(num_removed=1);
+                    self._db.update_statistics(num_removed=1)
                     logging.info(f'  {name}: not found, removed')
                 else:
                     logging.info(f'  {name}: not found')
@@ -70,7 +70,7 @@ class Worker:
                 logging.info(f'  {name}: not modified')
             elif res.status_code == 200:
                 if len(res.text) > 1024 * 1024:
-                    self._db.update_statistics(num_too_big=1);
+                    self._db.update_statistics(num_too_big=1)
                     logging.info(f'  {name}: response too big ({len(res.text)} bytes), refusing to process')
                     return
 
@@ -85,17 +85,17 @@ class Worker:
 
                 if real_name != name:
                     if self._db.remove_project(name):
-                        self._db.update_statistics(num_removed=1);
+                        self._db.update_statistics(num_removed=1)
                         logging.info(f'  {name}: actual name is {real_name}, project under old name removed')
                     else:
                         logging.info(f'  {name}: actual name is {real_name}')
 
                 if updated and etag is None:
                     logging.info(f'  {real_name}: added')
-                    self._db.update_statistics(num_added=1);
+                    self._db.update_statistics(num_added=1)
                 elif updated:
                     logging.info(f'  {real_name}: updated')
-                    self._db.update_statistics(num_changed=1);
+                    self._db.update_statistics(num_changed=1)
                 else:
                     logging.info(f'  {real_name}: not updated')
             else:
