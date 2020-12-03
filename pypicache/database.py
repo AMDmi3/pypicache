@@ -91,7 +91,9 @@ class Database():
                     ON CONFLICT (name)
                     DO UPDATE SET
                         updated = clock_timestamp(),
-                        etag = EXCLUDED.etag
+                        etag = EXCLUDED.etag,
+                        data_len = EXCLUDED.data_len,
+                        orig_len = EXCLUDED.orig_len
                     WHERE
                         projects.etag IS DISTINCT FROM EXCLUDED.etag
                     RETURNING name
