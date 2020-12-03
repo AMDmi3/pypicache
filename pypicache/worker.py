@@ -69,7 +69,7 @@ class Worker:
             elif res.status_code == 304:
                 logging.info(f'  {name}: not modified')
             elif res.status_code == 200:
-                if len(res.text) > 1024 * 1024:
+                if len(res.text) > 1024 * 1024 * 5:
                     self._db.update_statistics(num_too_big=1)
                     logging.info(f'  {name}: response too big ({len(res.text)} bytes), refusing to process')
                     return
