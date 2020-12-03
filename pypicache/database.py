@@ -37,7 +37,10 @@ class Database():
                     added timestamptz NOT NULL DEFAULT clock_timestamp(),
                     updated timestamptz NOT NULL DEFAULT clock_timestamp(),
 
-                    etag text
+                    etag text,
+
+                    data_len integer,
+                    orig_len integer
                 );
 
                 CREATE TABLE IF NOT EXISTS projects_data (
@@ -66,7 +69,7 @@ class Database():
                 """
             )
 
-    def update_project(self, name: str, data: str, etag: Optional[str]) -> bool:
+    def update_project(self, name: str, data: str, orig_len: int, etag: Optional[str]) -> bool:
         with self._db.cursor() as cur:
             cur.execute(
                 """
@@ -74,12 +77,16 @@ class Database():
                     INSERT INTO projects (
                         name,
                         updated,
-                        etag
+                        etag,
+                        data_len,
+                        orig_len
                     )
                     VALUES (
                         %(name)s,
                         clock_timestamp(),
-                        %(etag)s
+                        %(etag)s,
+                        %(data_len)s,
+                        %(orig_len)s
                     )
                     ON CONFLICT (name)
                     DO UPDATE SET
@@ -106,7 +113,9 @@ class Database():
                 {
                     'name': name,
                     'data': data,
-                    'etag': etag
+                    'etag': etag,
+                    'data_len': len(data),
+                    'orig_len': orig_len,
                 }
             )
 
