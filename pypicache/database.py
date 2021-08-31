@@ -203,7 +203,7 @@ class Database():
 
             return list(cur)
 
-    def update_statistics(self, num_added: int = 0, num_changed: int = 0, num_removed: int = 0, num_too_big: int = 0, num_requests: int = 0):
+    def update_statistics(self, num_added: int = 0, num_changed: int = 0, num_removed: int = 0, num_too_big: int = 0, num_requests: int = 0) -> None:
         with self._db.cursor() as cur:
             cur.execute(
                 """
