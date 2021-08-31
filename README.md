@@ -1,6 +1,6 @@
 # PyPi cache
 
-[![Build Status](https://travis-ci.org/repology/pypicache.svg?branch=master)](https://travis-ci.org/repology/pypicache)
+[![CI](https://github.com/AMDmi3/pypicache/actions/workflows/ci.yml/badge.svg)](https://github.com/AMDmi3/pypicache/actions/workflows/ci.yml)
 
 Shamefully, [PyPi](https://pypi.org) does not provide usable
 dump of metadata for all available packages.
