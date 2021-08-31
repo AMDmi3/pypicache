@@ -1,6 +1,6 @@
 black
 flake8>=3.8.0a2
 flake8-builtins
-flake8-import-order
 flake8-quotes
+isort
 mypy
