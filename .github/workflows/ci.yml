@@ -1,0 +1,43 @@
+name: CI
+on: [ push, pull_request ]
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - { python: '3.9' }
+          - { python: '3.10.0-rc.1' }
+    services:
+      postgresql:
+        image: postgres:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: pypicache
+          POSTGRES_PASSWORD: pypicache
+        options: --health-cmd pg_isready --health-interval=10s --health-timeout=5s --health-retries=5
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: Run flake8
+        run: make flake8
+      - name: Run mypy
+        run: make mypy
+      - name: Run isort
+        run: make isort
+      - name: Install
+        run: sudo ./setup.py install
+      - name: Test run
+        run: |
+          pypicache \
+            --dsn "dbname=pypicache user=pypicache password=pypicache host=localhost" \
+            --once-only \
+            --frontend-url https://github.com/AMDmi3/pypicache/actions
