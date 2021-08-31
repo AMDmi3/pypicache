@@ -30,6 +30,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     python_requires='>=3.9',
     install_requires=read_requirements('requirements.txt')
