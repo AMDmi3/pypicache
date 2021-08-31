@@ -34,7 +34,7 @@
 				None of these meet basic usability requirements. A simple single-file package metadata dump would be sufficient, but for some reason PyPI developers do not care (related upstream issues <a href="https://github.com/pypa/warehouse/issues/347">pypa/warehouse#347</a>, <a href="https://github.com/pypa/warehouse/issues/7403">pypa/warehouse#7403</a>, <a href="https://github.com/pypa/warehouse/issues/8802">pypa/warehouse#8802</a>) to provide such file, so this service was set up to provide at least something - that is, a metadata dump for recently changed packages only.
 				</p>
 				<p>
-				The format of the following file is <a href="https://facebook.github.io/zstd/">zstandard</a>-compressed JSON containing an array of outputs of <a href="https://warehouse.readthedocs.io/api-reference/json.html#project">Project</a> PyPI JSON API endpoint. Each package entry is additionally processed to remove <i>description</i> field and <i>release</i>s which are not the latest release (as specified by the <i>version</i> field) to reduce the size of the dump.
+				The format of the following file is <a href="https://facebook.github.io/zstd/">zstandard</a>-compressed JSON containing an array of outputs of <a href="https://warehouse.readthedocs.io/api-reference/json.html#project">Project</a> PyPI JSON API endpoint. Each package entry is additionally processed to remove <i>description</i> field and (with some exceptions) <i>release</i>s which are not the latest release (as specified by the <i>version</i> field) to reduce the size of the dump.
 				</p>
 
 				<div class="dump-block">

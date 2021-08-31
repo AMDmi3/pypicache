@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Dmitry Marakasov <amdmi3@amdmi3.ru>
+# Copyright (C) 2020-2021 Dmitry Marakasov <amdmi3@amdmi3.ru>
 #
 # This file is part of pypicache
 #
@@ -18,17 +18,28 @@
 import json
 from typing import Any
 
+from libversion import version_compare
+
 
 def prepare_project_data(data: Any) -> str:
     del data['info']['description']
 
-    versions_to_delete = [
-        version
-        for version in data['releases'].keys()
-        if version != data['info']['version']
-    ]
+    latest_version = data['info']['version']
 
-    for version in versions_to_delete:
+    def should_drop_version(version: str) -> bool:
+        # Preserve latest version
+        if version == latest_version:
+            return False
+
+        # Preserve all yanked versions above latest
+        # These are used by Repology to mark packages of yanked versions as incorrect
+        if version_compare(version, latest_version) > 0:
+            if any(item['yanked'] for item in data['releases'][version]):
+                return False
+
+        return True
+
+    for version in filter(should_drop_version, list(data['releases'].keys())):
         del data['releases'][version]
 
     return json.dumps(data, separators=(',', ':'))
