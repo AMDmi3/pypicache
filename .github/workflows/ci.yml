@@ -23,6 +23,15 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
+      - name: Install libversion
+        run: |
+          mkdir _libversion
+          cd _libversion
+          wget -qO- https://github.com/repology/libversion/archive/master.tar.gz | tar -xzf- --strip-components 1
+          cmake .
+          make
+          sudo make install
+          sudo ldconfig
       - name: Install python dependencies
         run: |
           pip install -r requirements.txt
