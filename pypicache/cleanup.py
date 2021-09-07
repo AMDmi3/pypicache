@@ -31,11 +31,10 @@ def prepare_project_data(data: Any) -> str:
         if version == latest_version:
             return False
 
-        # Preserve all yanked versions above latest
-        # These are used by Repology to mark packages of yanked versions as incorrect
+        # Preserve all versions above latest
+        # These include prerelease versions and yanked versions
         if version_compare(version, latest_version) > 0:
-            if any(item['yanked'] for item in data['releases'][version]):
-                return False
+            return False
 
         return True
 
