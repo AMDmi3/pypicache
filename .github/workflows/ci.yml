@@ -6,8 +6,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - { python: '3.9' }
-          - { python: '3.10.0-rc.1' }
+          - { python: '3.9', experimental: false }
+          - { python: '3.10', experimental: false }
+          - { python: '3.11.0-beta.3', experimental: true }
+    continue-on-error: ${{ matrix.experimental }}
+    name: Python ${{ matrix.python }}
     services:
       postgresql:
         image: postgres:latest
