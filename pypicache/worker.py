@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Dmitry Marakasov <amdmi3@amdmi3.ru>
+# Copyright (C) 2020,2022 Dmitry Marakasov <amdmi3@amdmi3.ru>
 #
 # This file is part of pypicache
 #
@@ -54,11 +54,8 @@ class Worker:
             res = self._pypi.get_project(name, etag)
             self._db.update_statistics(num_requests=1)
 
-            if res.status_code == 304 and res.history:
-                # redirect means that the name is different, and we need complete response
-                # (instead of just 'not modified' status) in order to correct this
-                res = self._pypi.get_project(name)
-                self._db.update_statistics(num_requests=1)
+            # redirects are not expected to happen after https://github.com/pypa/warehouse/commit/f7f48cb7fd58e08c1f8beba3846569e074e0b297
+            assert not res.history
 
             if res.status_code == 404:
                 if self._db.remove_project(name):
@@ -77,9 +74,6 @@ class Worker:
                 data = json.loads(res.text)
 
                 real_name = data['info']['name']
-
-                # assume that there's redirect if and only if the name is spelled differently
-                assert (real_name != name) == bool(res.history)
 
                 updated = self._db.update_project(real_name, prepare_project_data(data), len(res.text), res.headers.get('etag'))
 
