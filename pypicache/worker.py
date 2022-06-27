@@ -98,7 +98,7 @@ class Worker:
                     self._db.add_queue(name, timedelta(seconds=self._args.retry))
 
         except requests.Timeout:
-            logging.info(f'  {name}: failed: timeout, readdint to queue')
+            logging.info(f'  {name}: failed: timeout, readding to queue')
             if self._args.retry:
                 self._db.add_queue(name, timedelta(seconds=self._args.retry))
 
