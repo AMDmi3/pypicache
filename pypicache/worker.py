@@ -105,8 +105,12 @@ class Worker:
     def _process_changes(self) -> None:
         last_serial = self._db.get_last_serial()
 
-        if last_serial is None:
-            logging.warning('starting from scratch, requesting listing of all projects')
+        if last_serial is None and self._args.no_bootstrap:
+            logging.warning('skipping boostrap, package database will be incomplete!')
+            last_serial = self._pypi.get_last_serial()
+        elif last_serial is None:
+            logging.info('bootstrapping by scheduling updates for all projects')
+            logging.info('requesting listing of all packages')
             names, last_serial = self._pypi.get_all_packages()
 
             logging.info(f'putting {len(names)} project(s) to queue')

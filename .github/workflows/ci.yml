@@ -50,4 +50,5 @@ jobs:
           pypicache \
             --dsn "dbname=pypicache user=pypicache password=pypicache host=localhost" \
             --once-only \
+            --no-bootstrap \
             --frontend-url https://github.com/AMDmi3/pypicache/actions

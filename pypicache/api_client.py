@@ -65,3 +65,6 @@ class PyPIClient:
             current_serial = max(current_serial, serial)
 
         return projects, current_serial
+
+    def get_last_serial(self) -> int:
+        return cast(int, self._xmlrpc.changelog_last_serial())
