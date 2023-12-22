@@ -19,7 +19,7 @@ import contextlib
 import datetime
 import os
 import re
-from typing import Any, Dict, Iterable
+from typing import Any, BinaryIO, Dict, Iterable
 
 
 def generate_output(src_path: str, dst_path: str, dump_file_name: str, item_iter: Iterable[str], compression_level: int = 5) -> None:
@@ -80,7 +80,7 @@ def _generate_dump(path: str, item_iter: Iterable[str], compression_level: int =
     with contextlib.ExitStack() as stack:
         stack.callback(remove_temp_file)
 
-        outfd = stack.enter_context(open(tmppath, 'wb'))
+        outfd: BinaryIO = stack.enter_context(open(tmppath, 'wb'))
 
         if path.endswith('.json'):
             stack.callback(os.fsync, outfd.fileno())
