@@ -116,7 +116,7 @@ class Worker:
             self._db.set_last_update(last_update)
 
     def _process_queue(self) -> None:
-        if queue := self._db.get_queue(1000):
+        if queue := self._db.get_queue(self._args.queue_batch_size):
             count = len(set(name for _, name in queue))
 
             logging.info(f'updating {count} project(s) from queue')

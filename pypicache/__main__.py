@@ -39,6 +39,7 @@ def main() -> int:
     grp.add_argument('--timeout', type=int, default=10, help='HTTP timeout')
     grp.add_argument('--pypi-url', type=str, default='https://pypi.org/pypi', help='PyPi host to fetch data from')
     grp.add_argument('--frontend-url', type=str, help='frontend URL to use in user-agent header')
+    grp.add_argument('--queue-batch-size', type=int, default=1000, help='number of packages to process from queue in one iteration')
 
     grp = parser.add_argument_group('Output settings')
     grp.add_argument('--output-interval', type=int, default=600, help='interval between dump generation')
