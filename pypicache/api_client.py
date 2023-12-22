@@ -16,14 +16,14 @@
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
 import xmlrpc.client
-from typing import Iterable, Optional, Set, Tuple, cast
+from typing import Iterable, cast
 
 import requests
 
 
 class PyPIClient:
     _api_url: str
-    _user_agent: Optional[str]
+    _user_agent: str | None
     _timeout: int
     _xmlrpc: xmlrpc.client.ServerProxy
 
@@ -33,7 +33,7 @@ class PyPIClient:
         self._timeout = timeout
         self._xmlrpc = xmlrpc.client.ServerProxy(api_url)  # XXX: user-agent
 
-    def get_project(self, name: str, etag: Optional[str] = None) -> requests.Response:
+    def get_project(self, name: str, etag: str | None = None) -> requests.Response:
         headers = {}
 
         if self._user_agent:
@@ -46,17 +46,17 @@ class PyPIClient:
 
         return requests.get(url, headers=headers, timeout=self._timeout)
 
-    def get_changes(self, since_serial: int) -> Tuple[Set[str], int]:
+    def get_changes(self, since_serial: int) -> tuple[set[str], int]:
         changed_projects = set()
 
         current_serial = since_serial
-        for name, version, timestamp, action, serial in cast(Iterable[Tuple[str, str, int, str, int]], self._xmlrpc.changelog_since_serial(since_serial)):
+        for name, version, timestamp, action, serial in cast(Iterable[tuple[str, str, int, str, int]], self._xmlrpc.changelog_since_serial(since_serial)):
             changed_projects.add(name)
             current_serial = max(current_serial, serial)
 
         return changed_projects, current_serial
 
-    def get_all_packages(self) -> Tuple[Set[str], int]:
+    def get_all_packages(self) -> tuple[set[str], int]:
         projects = set()
 
         current_serial = 0

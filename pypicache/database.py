@@ -16,7 +16,7 @@
 # along with pypicache.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import timedelta
-from typing import Any, Iterable, List, Optional, Tuple, cast
+from typing import Any, Iterable, cast
 
 import psycopg2
 
@@ -69,7 +69,7 @@ class Database():
                 """
             )
 
-    def update_project(self, name: str, data: str, orig_len: int, etag: Optional[str]) -> bool:
+    def update_project(self, name: str, data: str, orig_len: int, etag: str | None) -> bool:
         with self._db.cursor() as cur:
             cur.execute(
                 """
@@ -140,7 +140,7 @@ class Database():
 
             return bool(row and row[0])
 
-    def get_etag(self, name: str) -> Optional[str]:
+    def get_etag(self, name: str) -> str | None:
         with self._db.cursor() as cur:
             cur.execute('SELECT etag FROM projects WHERE name = %(name)s', {'name': name})
 
@@ -154,7 +154,7 @@ class Database():
 
             yield from (row[0] for row in cur)
 
-    def get_last_serial(self) -> Optional[int]:
+    def get_last_serial(self) -> int | None:
         with self._db.cursor() as cur:
             cur.execute('SELECT last_serial FROM statistics')
 
@@ -187,7 +187,7 @@ class Database():
         with self._db.cursor() as cur:
             cur.execute('DELETE FROM queue WHERE id = %(id)s', {'id': id_})
 
-    def get_queue(self, limit: int) -> List[Tuple[int, str]]:
+    def get_queue(self, limit: int) -> list[tuple[int, str]]:
         with self._db.cursor() as cur:
             cur.execute(
                 """

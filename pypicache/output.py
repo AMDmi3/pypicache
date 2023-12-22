@@ -19,7 +19,7 @@ import contextlib
 import datetime
 import os
 import re
-from typing import Any, BinaryIO, Dict, Iterable
+from typing import Any, BinaryIO, Iterable
 
 
 def generate_output(src_path: str, dst_path: str, dump_file_name: str, item_iter: Iterable[str], compression_level: int = 5) -> None:
@@ -47,7 +47,7 @@ def generate_output(src_path: str, dst_path: str, dump_file_name: str, item_iter
     _copy_template(css_inpath, css_outpath)
 
 
-def _copy_template(src_path: str, dst_path: str, template_vars: Dict[str, Any] = {}) -> None:
+def _copy_template(src_path: str, dst_path: str, template_vars: dict[str, Any] = {}) -> None:
     def template_subst(match: re.Match[str]) -> str:
         key = match.group(0).strip('%')
         if key in template_vars:
