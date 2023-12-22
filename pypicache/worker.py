@@ -103,17 +103,25 @@ class Worker:
                 self._db.add_queue(name, timedelta(seconds=self._args.retry))
 
     def _process_changes(self) -> None:
-        names, last_update = self._pypi.get_changes(self._db.get_last_update() - self._args.feed_overlap)
+        last_serial = self._db.get_last_serial()
 
-        if names:
+        if last_serial is None:
+            logging.warning('starting from scratch, requesting listing of all projects')
+            names, last_serial = self._pypi.get_all_packages()
+
+            logging.info(f'putting {len(names)} project(s) to queue')
+            for name in names:
+                self._db.add_queue(name)
+        else:
+            names, last_serial = self._pypi.get_changes(last_serial)
+
             logging.info(f'updating {len(names)} project(s) from feed')
-
             for name in names:
                 self._update_single_project(name)
                 if self._args.recheck:
                     self._db.add_queue(name, timedelta(seconds=self._args.recheck))
 
-            self._db.set_last_update(last_update)
+        self._db.set_last_serial(last_serial)
 
     def _process_queue(self) -> None:
         if queue := self._db.get_queue(self._args.queue_batch_size):

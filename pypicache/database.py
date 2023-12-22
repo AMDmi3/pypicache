@@ -56,12 +56,12 @@ class Database():
 
                 CREATE TABLE IF NOT EXISTS statistics (
                     key integer NOT NULL DEFAULT 0 PRIMARY KEY,
-                    last_update integer NOT NULL DEFAULT EXTRACT(EPOCH FROM now()),
                     num_added integer NOT NULL DEFAULT 0,
                     num_changed integer NOT NULL DEFAULT 0,
                     num_removed integer NOT NULL DEFAULT 0,
                     num_too_big integer NOT NULL DEFAULT 0,
-                    num_requests integer NOT NULL DEFAULT 0
+                    num_requests integer NOT NULL DEFAULT 0,
+                    last_serial integer NULL
                 );
 
                 INSERT INTO statistics DEFAULT VALUES
@@ -154,17 +154,17 @@ class Database():
 
             yield from (row[0] for row in cur)
 
-    def get_last_update(self) -> int:
+    def get_last_serial(self) -> Optional[int]:
         with self._db.cursor() as cur:
-            cur.execute('SELECT last_update FROM statistics')
+            cur.execute('SELECT last_serial FROM statistics')
 
-            return cast(int, next(cur)[0])
+            return cast(int | None, next(cur)[0])
 
-    def set_last_update(self, last_update: int) -> None:
+    def set_last_serial(self, last_serial: int) -> None:
         with self._db.cursor() as cur:
-            cur.execute('UPDATE statistics SET last_update = %(last_update)s', {'last_update': last_update})
+            cur.execute('UPDATE statistics SET last_serial = %(last_serial)s', {'last_serial': last_serial})
 
-    def add_queue(self, name: str, postpone: Optional[timedelta]) -> None:
+    def add_queue(self, name: str, postpone: timedelta | None = None) -> None:
         with self._db.cursor() as cur:
             cur.execute(
                 """

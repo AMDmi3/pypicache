@@ -46,12 +46,22 @@ class PyPIClient:
 
         return requests.get(url, headers=headers, timeout=self._timeout)
 
-    def get_changes(self, since: int) -> Tuple[Set[str], int]:
+    def get_changes(self, since_serial: int) -> Tuple[Set[str], int]:
         changed_projects = set()
-        last_update = 0
 
-        for name, version, timestamp, action in cast(Iterable[Tuple[str, str, int, str]], self._xmlrpc.changelog(since)):
+        current_serial = since_serial
+        for name, version, timestamp, action, serial in cast(Iterable[Tuple[str, str, int, str, int]], self._xmlrpc.changelog_since_serial(since_serial)):
             changed_projects.add(name)
-            last_update = max(last_update, timestamp)
+            current_serial = max(current_serial, serial)
 
-        return changed_projects, last_update
+        return changed_projects, current_serial
+
+    def get_all_packages(self) -> Tuple[Set[str], int]:
+        projects = set()
+
+        current_serial = 0
+        for name, serial in cast(dict[str, int], self._xmlrpc.list_packages_with_serial()).items():
+            projects.add(name)
+            current_serial = max(current_serial, serial)
+
+        return projects, current_serial

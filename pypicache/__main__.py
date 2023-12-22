@@ -33,7 +33,6 @@ def main() -> int:
 
     grp = parser.add_argument_group('Update settings')
     grp.add_argument('--update-interval', type=int, default=60, help='interval between PyPi feed updates')
-    grp.add_argument('--feed-overlap', type=int, default=0, help='overlap of feed update timestan')
     grp.add_argument('--recheck', type=int, default=0, help='interval in seconds to issue additional request in')
     grp.add_argument('--retry', type=int, default=0, help='interval in seconds to retry failed requests')
     grp.add_argument('--timeout', type=int, default=10, help='HTTP timeout')
