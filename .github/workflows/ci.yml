@@ -44,7 +44,7 @@ jobs:
       - name: Run isort
         run: make isort
       - name: Install
-        run: sudo ./setup.py install
+        run: pip install .
       - name: Test run
         run: |
           pypicache \
