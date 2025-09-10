@@ -101,6 +101,8 @@ class Worker:
             logging.info(f'  {name}: failed: timeout, readding to queue')
             if self._args.retry:
                 self._db.add_queue(name, timedelta(seconds=self._args.retry))
+        except MemoryError:
+            logging.info(f'  {name}: failed: memory error, dropping')
 
     def _process_changes(self) -> None:
         last_serial = self._db.get_last_serial()
